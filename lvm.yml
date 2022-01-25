@@ -6,9 +6,9 @@
       ansible.builtin.hostname:
         name: ansible-manage-node1
         use: systemd
-    - name: Stop service iptables, if started
+    - name: Stop service firewalld, if started
       ansible.builtin.service:
-        name: iptables
+        name: firewalld
         state: stopped
     - name: Disabling SELinux state
       selinux:
