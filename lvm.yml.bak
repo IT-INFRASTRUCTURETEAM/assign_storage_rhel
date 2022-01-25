@@ -1,0 +1,58 @@
+- name: playbook to creatre VG and mount to spacific dir
+  hosts: all
+  become: true
+  tasks:
+    - name: Set a hostname specifying strategy for VM
+      ansible.builtin.hostname:
+        name: web01
+        use: systemd
+    - name: Stop service iptables, if started
+      ansible.builtin.service:
+        name: iptables
+        state: stopped
+    - name: Disabling SELinux state
+      selinux:
+        state: disabled	
+    - name: create partition on local disk
+      parted:
+        device: /dev/nvme1n1
+        number: 1
+        flags: [ lvm ]
+        state: present
+        part_end: 2GB
+
+    - name: Install lvm2 dependency
+      package:
+        name: lvm2
+        state: present
+
+    - name: task for creating volume group
+      lvg:
+          vg: vg01
+          pvs: /dev/nvme1n1
+          pesize: 16
+
+    - name: task for creating logical volume
+      lvol:
+          vg: vg01
+          lv:  lv01
+          size: 1g
+          force: yes
+
+    - name: Create directory data1 if does not exist
+      file:
+        path: /data1
+        state: directory
+        mode: '0755'
+
+    - name: format the xfs filesystem
+      filesystem:
+        fstype: xfs
+        dev: /dev/vg01/lv01
+
+    - name: mount the lv on /data1
+      mount:
+        path: /data1
+        src: /dev/vg01/lv01
+        fstype: xfs
+        state: mounted
